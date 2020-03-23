@@ -1,0 +1,63 @@
+---
+title: "Force Plate Breakdwon"
+author: "Jacob Buffa"
+date: "March 19, 2020"
+output: html_document
+---
+
+
+### FORCE PLATE METRICS ARE BROKEN DOWN INTO 3 CATEGORIES
+
+<br>
+
+
+### Performance Outcomes
+- Propulsive Net Impulse
+- Avg Propulsive Power
+- Avg Relative Propulsive Power
+- Avg Braking Power
+- Avg Relative Braking Power
+
+
+
+### Performance Drivers
+- Takeoff Velocity
+- Avg Propulsive Velocity
+- Avg Propulsive Force
+- Avg Relative Propulsive Force
+- Avg Braking Velocity
+- Avg Braking Force
+- Avg Relative Braking Force
+
+
+
+### Performance Strategies
+- RSI
+- Braking Phase
+- Propulsive Phase
+- Countermovement Depth
+- System Weight
+
+<br>
+*****
+<br>
+
+####All Performance Outcomes are important for every athlete.  We use Performance Drivers to classify athletes and identify what Drivers and strategies produce the most optimal performance outcomes
+
+#### Alogrithm 1:
+Momentum = *Takeoff Velo > Avg Propulsive Velo +2  &  Avg Propulsive Force > Avg Propulsive Velo +2* <br>
+Power = *!Momentum & Avg Braking Force < Avg Braking Velocity - 2* <br>
+Athletic = *!Momentum & Avg Braking Force >= Avg Braking Velocity -2*
+
+<br>
+****
+<br>
+
+<b>DESCRIPTIONS<b>
+
+<p> Momentum athletes need both size and strength. The only momentum athletes that can be successful on field also have a braking force greater than braking velocity. <p>
+
+<p> Power athletes need strength.  They can be successful on their own, but added strength improves deceleration abilities. <p>
+
+<p> Athletic athletes are case by case.  They rely on doing multiple things well.  Some could need size, some could need more power.  If there is an athletic athlete who is average or below in all categories, it is not condusive to future success <p>
+

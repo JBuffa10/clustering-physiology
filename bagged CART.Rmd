@@ -1,0 +1,159 @@
+---
+title: "bagged CART model"
+author: "Jacob Buffa"
+date: "March 20, 2020"
+output: html_document
+---
+
+## MODEL OBJECTIVE
+<p> I have a subset of athltes that after training and watching for over a year, I am confident in their physiology, movement strategies, and they fit the logic derived from the Performance Driver metrics.  There is another subst of athletes that I am also confident in their movement strategies, but they are slightly off from the performance driver logic.  I am hoping to find a model that can identify a pattern that I am not recognizing to correctly classify all athletes.<p>
+<br>
+A bagged CART model was chosen first because there are no tuning parameters. Thought of as a 'baseline'
+<br>
+
+### Load Libraries & Data
+```{r libraries, message=FALSE, warning=FALSE}
+library(caret)
+library(e1071)
+library(ipred)
+library(tidyverse)
+library(rattle)
+library(rpart.plot)
+
+# Scoring Function
+custom.scoring <- function(x){
+  scale(x)*10+50
+}
+
+# Tables
+athleteInfo <- read.csv("AthleteInformation1.csv")
+allData <- read.csv("FINAL TABLE.csv")
+```
+
+
+
+### Data Processing
+```{r process, warning=FALSE, message=FALSE}
+# ORGANIZE 
+athleteInfo <-
+  athleteInfo %>%
+  transform(Birthday = as.Date(Birthday, format = "%m/%d/%Y")) %>%
+  mutate(Gender = ifelse(Gender == "F", "F","M"))
+
+masterData <- 
+  allData %>%
+  mutate(Avg..Relative.Braking.Force = (Avg..Braking.Force/System.Weight)*100,
+         Avg..Relative.Braking.Power = Avg..Braking.Power/System.Weight,
+         Avg..Relative.Propulsive.Power = Avg..Propulsive.Power/System.Weight) %>%
+  transform(Date = as.Date(Date, format = "%m/%d/%Y"),
+            Name = as.character(Name)) %>%
+  left_join(athleteInfo, by = "Name") %>%
+  filter(Gender == "M")
+
+variables <- colnames(masterData)
+brakingMetrics <- variables[c(5:7,12,13,16,17,19)]
+propulsiveMetrics <- variables[c(9:11,14,15,47,53:55)]
+balanceMetrics <- variables[c(25:34)]
+
+# CENTER AND SCALE
+clusterData <- masterData %>% 
+  mutate_at(vars(brakingMetrics,propulsiveMetrics), custom.scoring) %>%
+  group_by(Name) %>%
+  summarise_at(vars(brakingMetrics, propulsiveMetrics), mean, na.rm = TRUE)
+clusterData <- na.omit(clusterData) # remove NA
+
+# IDENTIFY CORRELATED PREDICTORS
+cormatrix <- cor(clusterData[,-1])
+summary(cormatrix[upper.tri(cormatrix)])
+#highlyCor <- findCorrelation(cormatrix, cutoff = .8) 
+#filterclusterData <- clusterData[,-highlyCor]
+```
+Data has been cleaned, centered, and scaled for the model.  Normally would elimate linear dependencies, but Performance Driver metrics have been selected based on domain expertise
+<br>
+
+```{r assign labels, message=FALSE, warning=FALSE}
+labels <- 
+  clusterData %>%
+  mutate(Class = case_when(Takeoff.Velocity > Avg..Propulsive.Velocity+2 &
+                             Avg..Propulsive.Force > Avg..Propulsive.Velocity+2 ~ 'Momentum',
+                           Takeoff.Velocity <= Avg..Propulsive.Velocity+2 &
+                             Avg..Propulsive.Force <= Avg..Propulsive.Velocity+2 &
+                             Avg..Braking.Force < Avg..Braking.Velocity-2 ~ 'Power',
+                           Takeoff.Velocity <= Avg..Propulsive.Velocity+2 &
+                             Avg..Propulsive.Force <= Avg..Propulsive.Velocity+2 &
+                             Avg..Braking.Force >= Avg..Braking.Velocity-2 ~ 'Athletic')) %>%
+  select(Name, Class)
+
+treeData <-
+  masterData %>% 
+  mutate_at(vars(brakingMetrics,propulsiveMetrics), custom.scoring) %>%
+  group_by(Name, Date) %>%
+  summarise_at(vars(brakingMetrics, propulsiveMetrics), mean, na.rm = TRUE) %>%
+  left_join(labels, by = 'Name') %>%
+  ungroup() %>%
+  mutate(Class = ifelse(is.na(Class), 'Unknown',Class)) %>%
+  group_by(Name) %>%
+  mutate(Per = n()/1118) %>%
+  mutate(Outlier = ifelse(Per > .02 & Avg..Propulsive.Force <= quantile(Avg..Propulsive.Force, .6, na.rm = TRUE),1,0)) %>%
+  filter(Outlier == 0) %>%
+  select(Name, Avg..Braking.Force, Avg..Braking.Velocity, Avg..Relative.Braking.Force, Avg..Propulsive.Force, 
+         Avg..Relative.Propulsive.Force, Avg..Propulsive.Velocity,Avg..Propulsive.Force, Takeoff.Velocity,
+         Class) %>% na.omit()
+```
+Condense data to assign labels to the athletes that I am confident in, and fit the logic derived from Performance Driver metrics.  Then expand data back to have more data points to train the model.  Identify Athletes that have enough tests to bias the sample, and only keep the top 40% of their tests.  Finally, remove and NA values
+<br>
+
+### Data Splitting
+
+```{r training_testing, message=FALSE, warning=FALSE}
+train.tree <- treeData[,-1] %>% filter(Class != 'Unknown')
+test.tree <- treeData[,-1] %>% filter(Class == 'Unknown')
+```
+Ideally these would be random splits.  But for the purposes of this model, I have split the training set and testing set based on athletes with and without pre-assigned labels
+<br>
+
+### Model Training & Tuning
+```{r model, message=FALSE, warning=FALSE}
+# Resampling method of leave one out cross validation
+fitControl <- trainControl(
+  method = "LOOCV",
+  number = 10,
+  repeats = 20
+)
+
+# Model Training
+set.seed(123)
+bagged.cart.model <- train(Class ~., data = train.tree,
+                           # bagged cart decision tree
+                           # No tuning parameters for this model
+                           method = 'treebag', trControl = fitControl)
+
+bagged.cart.model
+```
+Since there are no tuning parameters for a bagged CART model, there is no tuning required.
+<br>
+
+### Predicting Outcomes
+```{r}
+# get predicted labels
+bcart.pred <- predict.train(bagged.cart.model, newdata = test.tree)
+
+# Distribution of predicted labels
+sum(bcart.pred == 'Athletic')
+sum(bcart.pred == 'Power')
+sum(bcart.pred == 'Momentum')
+
+# assign labels to athletes and view results
+predicted <-
+  treeData %>%
+  filter(Class == 'Unknown') %>%
+  select(Name)%>%
+  add_column(pred.class = bcart.pred) %>% view()
+
+```
+<br>
+
+### Conclusion
+<i>
+This model did not perform well.  Too many athletes had multiple classes that went back and forth between all 3 clusters. Alternating between power and athletic is ok, but athletes should not change between momentum and power/athletic.  Could possibly improve by filtering the number of samples better.  Increasing the number of repeats to from 10 to 20 had no affect.
+<i>

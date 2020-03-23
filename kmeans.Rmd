@@ -1,0 +1,142 @@
+---
+title: "kmeans"
+author: "Jacob Buffa"
+date: "March 21, 2020"
+output: html_document
+---
+
+## MODEL OBJECTIVE
+<p> I believe there are 3 types of athletes based on movement abilities and physiology.  I want to to if an unsupervised learning model identifies the same clusters.<p>
+<br>
+A kmeans model was chosen as the prefered unsupervised clustering method
+<br>
+
+### Load Libraries & Data
+```{r libraries, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(factoextra)
+```
+
+
+```{r cars}
+
+# Scoring Function
+custom.scoring <- function(x){
+  scale(x)*10+50
+}
+
+# Tables
+athleteInfo <- read.csv("AthleteInformation1.csv")
+allData <- read.csv("FINAL TABLE.csv")
+```
+
+
+
+### Data Processing
+```{r process, warning=FALSE, message=FALSE}
+# ORGANIZE 
+athleteInfo <-
+  athleteInfo %>%
+  transform(Birthday = as.Date(Birthday, format = "%m/%d/%Y")) %>%
+  mutate(Gender = ifelse(Gender == "F", "F","M"))
+
+masterData <- 
+  allData %>%
+  mutate(Avg..Relative.Braking.Force = (Avg..Braking.Force/System.Weight)*100,
+         Avg..Relative.Braking.Power = Avg..Braking.Power/System.Weight,
+         Avg..Relative.Propulsive.Power = Avg..Propulsive.Power/System.Weight) %>%
+  transform(Date = as.Date(Date, format = "%m/%d/%Y"),
+            Name = as.character(Name)) %>%
+  left_join(athleteInfo, by = "Name") %>%
+  filter(Gender == "M")
+
+variables <- colnames(masterData)
+brakingMetrics <- variables[c(5:7,12,13,16,17,19)]
+propulsiveMetrics <- variables[c(9:11,14,15,47,53:55)]
+balanceMetrics <- variables[c(25:34)]
+
+# CENTER AND SCALE
+clusterData <- masterData %>% 
+  mutate_at(vars(brakingMetrics,propulsiveMetrics), custom.scoring) %>%
+  group_by(Name) %>%
+  summarise_at(vars(brakingMetrics, propulsiveMetrics), mean, na.rm = TRUE)
+clusterData <- na.omit(clusterData) # remove NA
+
+kmeansData <-
+  clusterData %>%
+  group_by(Name) %>%
+  transmute(Velo.Diff = Avg..Propulsive.Velocity - Takeoff.Velocity,
+            Force.Velo.Diff = Avg..Propulsive.Force - Avg..Propulsive.Velocity,
+            Braking.Diff = Avg..Braking.Force - Avg..Braking.Velocity)
+
+# IDENTIFY CORRELATED PREDICTORS
+cormatrix <- cor(clusterData[,-1])
+summary(cormatrix[upper.tri(cormatrix)])
+#highlyCor <- findCorrelation(cormatrix, cutoff = .8) 
+#filterclusterData <- clusterData[,-highlyCor]
+```
+Data has been cleaned, centered, and scaled for the model.  Normally would elimate linear dependencies, but Performance Driver metrics have been selected based on domain expertise.  There is an alternative Dataset based solely on metric differences that match the logic created on the Force Plate Breakdown file.
+<br>
+
+### Model Training & Tuning
+```{r optimal k model 1}
+# check optimal number for K
+k.max <- 15
+
+wss <- sapply(1:k.max, function(k) {
+  kmeans(clusterData[,-1], k, nstart = 50, iter.max = 15)$tot.withinss
+})
+
+plot(1:k.max, wss, 
+     type = "b", 
+     pch = 19, 
+     frame = FALSE,
+     xlab = "Number of Clusters K", 
+     ylab = "Total within-clusters sum of squares")
+```
+
+
+```{r model 1 training}
+# labels for k = 2
+k2 <- kmeans(clusterData[,-1], 2)
+fviz_cluster(k2, data = clusterData[,-1])
+k2$centers
+```
+
+This model identified 2 different clusters of athletes.  Cluster 1 were athletes that utilized a longer range of motion on the way down, and much slower and less powerful on the way up. Cluster 2 were much faster, more explosive athletes.  It seemed to separate good vs bad athletes.
+<br>
+
+Next is to try using the dataset with only metric differences.
+
+
+### Second Model Training & Tuning
+```{r optimal k moel 2}
+# check optimal number for K
+k.max <- 15
+
+wss <- sapply(1:k.max, function(k) {
+  kmeans(kmeansData[,-1], k, nstart = 50, iter.max = 15)$tot.withinss
+})
+
+plot(1:k.max, wss, 
+     type = "b", 
+     pch = 19, 
+     frame = FALSE,
+     xlab = "Number of Clusters K", 
+     ylab = "Total within-clusters sum of squares")
+```
+
+
+```{r model 2 training}
+# labels for k = 3
+k3 <- kmeans(kmeansData[,-1], 3)
+fviz_cluster(k3, data = kmeansData[,-1])
+k3$centers
+```
+
+This model supported the logic created fairly well.  However, there was significant overlap between groups and total within cluster sum of squares was not very good.
+<br>
+<br>
+
+### Conclusion
+Based on scores alone, unsupervised learning model will cluster athletes based on overall ability (Bad, Average, Good, etc.). Based on metric differences, the model clusters athletes based on the same logic, but is highly inaccurate. A tree based model with more than just metric differences may be best.  But this is useful to know the model is seeing what we see.
