@@ -57,6 +57,9 @@ balanceMetrics <- variables[c(25:34)]
 
 # CENTER AND SCALE
 clusterData <- masterData %>% 
+  mutate(Avg..Braking.Velocity = abs(Avg..Braking.Velocity), # change negative numbers to positive
+         Avg..Braking.Power = abs(Avg..Braking.Power),
+         Avg..Relative.Braking.Power = abs(Avg..Relative.Braking.Power)) %>%
   mutate_at(vars(brakingMetrics,propulsiveMetrics), custom.scoring) %>%
   group_by(Name) %>%
   summarise_at(vars(brakingMetrics, propulsiveMetrics), mean, na.rm = TRUE)

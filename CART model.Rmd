@@ -54,6 +54,9 @@ balanceMetrics <- variables[c(25:34)]
 
 # CENTER AND SCALE
 clusterData <- masterData %>% 
+  mutate(Avg..Braking.Velocity = abs(Avg..Braking.Velocity), # change negative numbers to positive
+         Avg..Braking.Power = abs(Avg..Braking.Power),
+         Avg..Relative.Braking.Power = abs(Avg..Relative.Braking.Power)) %>%
   mutate_at(vars(brakingMetrics,propulsiveMetrics), custom.scoring) %>%
   group_by(Name) %>%
   summarise_at(vars(brakingMetrics, propulsiveMetrics), mean, na.rm = TRUE)
@@ -156,7 +159,7 @@ treeData %>%
 <br>
 
 ### Conclusion
-<i>This model performed better than the bagged CART model, but still not optimally.  Seemed to misclassify some momentum athletes as athletic.  It was very interesting and insightful to see the logic being used for the tree was only braking velocity vs. force.  The next step is to re-run the model, but add in a propulsive velocity difference metric.  Maybe strip away all other metrics aside from the velo difference and braking velo and braking force.<i>
+<i>This model performed better than the bagged CART model, but still not optimally.  This seemed to deem that momentum athletes could not be elite on field by setting the velocity threshold at 44 instead of taking it as a ratio.  The next step is to re-run the model, but add in a propulsive velocity difference metric.  Maybe strip away all other metrics aside from the velo difference and raw propulsive numbers.<i>
 <br>
 <br>
 
@@ -177,7 +180,7 @@ treeData.2 <-
   filter(Outlier == 0) %>%
   mutate(Propulsive.Velo.Diff = Avg..Propulsive.Velocity - Takeoff.Velocity) %>%
   select(Name, Avg..Braking.Force, Avg..Braking.Velocity, Avg..Relative.Braking.Force, Avg..Propulsive.Force, 
-         Avg..Relative.Propulsive.Force, Avg..Propulsive.Velocity,Avg..Propulsive.Force, Takeoff.Velocity,
+         Avg..Relative.Propulsive.Force, Avg..Propulsive.Velocity, Takeoff.Velocity,
          Propulsive.Velo.Diff,Class) %>% na.omit()
 
 train.tree.2 <- treeData.2[,-1] %>% filter(Class != 'Unknown')
@@ -232,7 +235,153 @@ treeData %>%
 
 ### Conclusion
 <i>
-This model was slightly more accurate than the first.  The second branch used the Velocity difference variable instead of braking force which made it more accurate.  The next thought now is that I either need to take a harder look at the athlete clusters to see if I may have misclassified some.  It is possible that I am not misunderstanding some qualities between "Power" and "Athletic".  The alternative is to figure out a way to get the model to prioritize Velocity difference over braking velocity.  It seems that would make it the most accurate and complete the model.
+This model was signifacntly more accurate than the first.  The primary branch used velocity difference which was the goal.  The second branch should not use Propulsive Force, given that high momentum athletes could have high total propulsive force.  Next step is to try a 3rd model that strips away propulsive force <i>
+<br>
+<br>
+
+### Model 3 Training & Tuning
+```{r model 3, message=FALSE, warning=FALSE}
+# add velo difference as a variables
+treeData.3 <-
+  masterData %>% 
+  mutate_at(vars(brakingMetrics,propulsiveMetrics), custom.scoring) %>%
+  group_by(Name, Date) %>%
+  summarise_at(vars(brakingMetrics, propulsiveMetrics), mean, na.rm = TRUE) %>%
+  left_join(labels, by = 'Name') %>%
+  ungroup() %>%
+  mutate(Class = ifelse(is.na(Class), 'Unknown',Class)) %>%
+  group_by(Name) %>%
+  mutate(Per = n()/1118) %>%
+  mutate(Outlier = ifelse(Per > .02 & Avg..Propulsive.Force <= quantile(Avg..Propulsive.Force, .6, na.rm = TRUE),1,0)) %>%
+  filter(Outlier == 0) %>%
+  mutate(Propulsive.Velo.Diff = Avg..Propulsive.Velocity - Takeoff.Velocity) %>%
+  select(Name, Avg..Braking.Force, Avg..Braking.Velocity, Avg..Relative.Braking.Force,
+         Avg..Relative.Propulsive.Force, Avg..Propulsive.Velocity, Takeoff.Velocity,
+         Propulsive.Velo.Diff,Class) %>% na.omit()
+
+train.tree.3 <- treeData.3[,-1] %>% filter(Class != 'Unknown')
+test.tree.3 <- treeData.3[,-1] %>% filter(Class == 'Unknown')
+
+# Resampling method of repeated cross validation
+fitControl <- trainControl(
+  method = "repeatedcv",
+  number = 10,
+  repeats = 10
+)
+
+# Model Training
+set.seed(234)
+cart.model.3 <- train(Class ~., data = train.tree.3,
+                    method = 'rpart', 
+                    minsplit = 0,
+                    cp = 5,
+                    trControl = fitControl)
+
+cart.model.3
+
+```
+
+
+```{r plot model.3}
+plot(cart.model.3$finalModel)
+text(cart.model.3$finalModel)
+```
+
+
+### Predicting Outcomes
+```{r predicting model 3}
+# get predicted labels
+cart.3.pred <- predict.train(cart.model.3, newdata = test.tree.3)
+
+# Distribution of predicted labels
+sum(cart.3.pred == 'Athletic')
+sum(cart.3.pred == 'Power')
+sum(cart.3.pred == 'Momentum')
+
+# assign labels to athletes and view results
+treeData %>%
+  filter(Class == 'Unknown') %>%
+  select(Name)%>%
+  add_column(pred.class = cart.2.pred) %>% view()
+
+```
+
+<br>
+
+### Conclusion
 <i>
+This model was slightly more accurat than the second.  Stripping away Avg Propulsive Force force the model to evaluate braking metrics.  I liked how it evaluated Athletic athletes on both Braking Force and Velocity.  Next Step may be to add a metric for the difference in relative propulsive vs relative braking forces <i>
+<br>
+<br>
+
+### Model 4 Training & Tuning
+```{r model 4, message=FALSE, warning=FALSE}
+# add velo difference as a variables
+treeData.4 <-
+  masterData %>% 
+  mutate_at(vars(brakingMetrics,propulsiveMetrics), custom.scoring) %>%
+  group_by(Name, Date) %>%
+  summarise_at(vars(brakingMetrics, propulsiveMetrics), mean, na.rm = TRUE) %>%
+  left_join(labels, by = 'Name') %>%
+  ungroup() %>%
+  mutate(Class = ifelse(is.na(Class), 'Unknown',Class)) %>%
+  group_by(Name) %>%
+  mutate(Force.Diff = Avg..Relative.Propulsive.Force - Avg..Relative.Braking.Force) %>%
+  mutate(Per = n()/1118) %>%
+  mutate(Outlier = ifelse(Per > .02 & Avg..Propulsive.Force <= quantile(Avg..Propulsive.Force, .6, na.rm = TRUE),1,0)) %>%
+  filter(Outlier == 0) %>%
+  mutate(Propulsive.Velo.Diff = Avg..Propulsive.Velocity - Takeoff.Velocity) %>% # add relative force difference
+  select(Name,Avg..Relative.Braking.Force, Avg..Relative.Propulsive.Force, Avg..Propulsive.Velocity, Takeoff.Velocity,
+         Propulsive.Velo.Diff,Force.Diff, Class) %>% na.omit()
+
+train.tree.4 <- treeData.4[,-1] %>% filter(Class != 'Unknown')
+test.tree.4 <- treeData.4[,-1] %>% filter(Class == 'Unknown')
+
+# Resampling method of repeated cross validation
+fitControl <- trainControl(
+  method = "repeatedcv",
+  number = 10,
+  repeats = 10
+)
+
+# Model Training
+set.seed(234)
+cart.model.4 <- train(Class ~., data = train.tree.4,
+                    method = 'rpart', 
+                    minsplit = 0,
+                    cp = 5,
+                    trControl = fitControl)
+
+cart.model.4
+
+```
+```{r plot model 4}
+plot(cart.model.4$finalModel)
+text(cart.model.4$finalModel)
+```
+
+### Predicting Outcomes
+```{r predicting model 4}
+# get predicted labels
+cart.4.pred <- predict.train(cart.model.4, newdata = test.tree.4)
+
+# Distribution of predicted labels
+sum(cart.4.pred == 'Athletic')
+sum(cart.4.pred == 'Power')
+sum(cart.4.pred == 'Momentum')
+
+# assign labels to athletes and view results
+treeData %>%
+  filter(Class == 'Unknown') %>%
+  select(Name)%>%
+  add_column(pred.class = cart.4.pred) %>% view()
+
+```
+
+<br>
+
+### Conclusion
+<i>
+Seemed to have hit a cap with model 4.  The accuracy did not increase by adding the force difference metric, because it still chose the same braking metircs as model 3.  When I took those metrics away, it chose to evaluate on relative braking force.  I thought that might be better but the accuracy actually went down.  It seems maybe a more complex tree model may be needed  <i>
 <br>
 <br>
