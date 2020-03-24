@@ -345,16 +345,18 @@ fitControl <- trainControl(
 )
 
 # Model Training
+tuneGrid <- expand.grid(cp = seq(0, 0.5, 0.05))
 set.seed(234)
 cart.model.4 <- train(Class ~., data = train.tree.4,
-                    method = 'rpart', 
-                    minsplit = 0,
-                    cp = 5,
+                    method = 'rpart',
+                    tuneGrid = tuneGrid,
                     trControl = fitControl)
 
 cart.model.4
 
 ```
+
+
 ```{r plot model 4}
 plot(cart.model.4$finalModel)
 text(cart.model.4$finalModel)
