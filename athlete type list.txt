@@ -1,0 +1,8 @@
+powerAthletes <- 'Aaron Schromm','Cody Klotz','','Cruz Valencia','Derek Stanley','Drake Lubin','Jordan Johnson','Kyle Fowler','Matthew Nolan','Mycole Pruitt','Tyler Reichenborn','Zach Bryce','','','','','','','','','','','','',''
+
+athleticAthletes <- 'Jacob Buffa','Brett Fischer','Andrew Buescher','Anthony Green','Arturo Romero','Brady Cook','Braxton Martinez','Bryce Horstman','Cade Schares','Cameron Haegele','Clayton Giorgio',
+'Cody Creed','Darian Crisp','Dennis Jordan','DJ Miller','Evan Martin','Isaiah Williams','Jehu','Josh Bunselmeyer','Matt Rehder','Athletic','Taylor Robinson','Tony Adams','',''
+
+momentumAtletes <- 'Alex Hoff','Andrew Ness','Braden Burcham','Ben Smith','Blaise Matheny','Bryce Grossius','Charlie Bourneuf','Cody Siebenberger','Denton McNamee','Elias Stevens','Matthew Kaiser',
+'Ethan Snarr','Gavyn Dockery','Greg Hamilton','Hunter Counton','Ian Funk','Ian Lohse','Jake Matheny','Keaton Greiwe','Landon Johnson','Matthew Arnold','Nathan Beaton','Nicholas Harms','Patrick Deemer',
+'Paul Noel','Quinton Dacus','Ryan Malzahn', 'Ryan Miller', 'Tate Matheny', 'Tommy Shriver','Troy Schneider','Tyson James','Zach Brasier','Zach Voss','Zeb Roos'

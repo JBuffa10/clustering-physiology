@@ -6,11 +6,10 @@ output: html_document
 ---
 
 ## MODEL OBJECTIVE
-<p> kmeans, bagged CART, and CART models have all been tried so far.  CART has gotten the closest.  The decision tree created had the logic that I thought would be correct, but it still led to under classifying elite power athletes.  More complexity was needed. <p>
+<p> kmeans, bagged CART, and CART models have all been tried so far.  CART has gotten the closest.  The decision tree created had the logic that was fairly accurate.  This next model will be created with the goal of seeing if added complexity helps the model. <p>
 A Random Forest Model was chosen to increase complexity with a different tuning parameter without losing interpretibility.
 <br>
-A bagged CART model was chosen first because there are no tuning parameters. Thought of as a 'baseline'.  Now a simple rpart classification tree is selected in order to view and analyze decision making proces of the model
-<br>
+
 ### Load Libraries & Data
 ```{r libraries, message=FALSE, warning=FALSE}
 library(caret)
