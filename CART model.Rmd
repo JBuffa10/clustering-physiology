@@ -235,7 +235,7 @@ treeData %>%
 
 ### Conclusion
 <i>
-This model was signifacntly more accurate than the first.  The primary branch used velocity difference which was the goal.  The second branch should not use Propulsive Force, given that high momentum athletes could have high total propulsive force.  Next step is to try a 3rd model that strips away propulsive force <i>
+This model was signifacntly more accurate than the first.  The primary branch used velocity difference which was the goal.  Ideally, momentum athletes would be on the left side only, and the right side can switch back and forth between athletic and power.  This model is close but not quite there.  The next step is to remove avg. propulsive velocity. <i>
 <br>
 <br>
 
@@ -310,7 +310,30 @@ treeData %>%
 
 ### Conclusion
 <i>
-This model was slightly more accurat than the second.  Stripping away Avg Propulsive Force force the model to evaluate braking metrics.  I liked how it evaluated Athletic athletes on both Braking Force and Velocity.  Next Step may be to add a metric for the difference in relative propulsive vs relative braking forces <i>
+This model was slightly more accurat than the second.  Stripping away Avg Propulsive Force force the model to evaluate braking metrics.  This made the left side of the tree much more accurate.  The right side needs to be addressed.  After reviewing the tree, it looks like the model may need to be trained on only high level athletes. It creates nodes to try and fit low level athletes to their label.  That is a problem with the training data. <i>
 <br>
 <br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
