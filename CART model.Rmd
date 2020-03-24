@@ -42,6 +42,9 @@ masterData <-
   mutate(Avg..Relative.Braking.Force = (Avg..Braking.Force/System.Weight)*100,
          Avg..Relative.Braking.Power = Avg..Braking.Power/System.Weight,
          Avg..Relative.Propulsive.Power = Avg..Propulsive.Power/System.Weight) %>%
+  mutate(Avg..Braking.Velocity = abs(Avg..Braking.Velocity), # change negative numbers to positive
+         Avg..Braking.Power = abs(Avg..Braking.Power),
+         Avg..Relative.Braking.Power = abs(Avg..Relative.Braking.Power)) %>%
   transform(Date = as.Date(Date, format = "%m/%d/%Y"),
             Name = as.character(Name)) %>%
   left_join(athleteInfo, by = "Name") %>%
@@ -54,9 +57,6 @@ balanceMetrics <- variables[c(25:34)]
 
 # CENTER AND SCALE
 clusterData <- masterData %>% 
-  mutate(Avg..Braking.Velocity = abs(Avg..Braking.Velocity), # change negative numbers to positive
-         Avg..Braking.Power = abs(Avg..Braking.Power),
-         Avg..Relative.Braking.Power = abs(Avg..Relative.Braking.Power)) %>%
   mutate_at(vars(brakingMetrics,propulsiveMetrics), custom.scoring) %>%
   group_by(Name) %>%
   summarise_at(vars(brakingMetrics, propulsiveMetrics), mean, na.rm = TRUE)
@@ -194,11 +194,11 @@ fitControl <- trainControl(
 )
 
 # Model Training
+tuneGrid <- expand.grid(cp = seq(0, 0.5, 0.05))
 set.seed(234)
 cart.model.2 <- train(Class ~., data = train.tree.2,
-                    method = 'rpart', 
-                    minsplit = 0,
-                    cp = 5,
+                    method = 'rpart',
+                    tuneGrid = tuneGrid,
                     trControl = fitControl)
 
 cart.model.2
@@ -270,11 +270,11 @@ fitControl <- trainControl(
 )
 
 # Model Training
+tuneGrid <- expand.grid(cp = seq(0, 0.5, 0.05))
 set.seed(234)
 cart.model.3 <- train(Class ~., data = train.tree.3,
                     method = 'rpart', 
-                    minsplit = 0,
-                    cp = 5,
+                    tuneGrid = tuneGrid,
                     trControl = fitControl)
 
 cart.model.3
@@ -302,7 +302,7 @@ sum(cart.3.pred == 'Momentum')
 treeData %>%
   filter(Class == 'Unknown') %>%
   select(Name)%>%
-  add_column(pred.class = cart.2.pred) %>% view()
+  add_column(pred.class = cart.3.pred) %>% view()
 
 ```
 
@@ -314,76 +314,3 @@ This model was slightly more accurat than the second.  Stripping away Avg Propul
 <br>
 <br>
 
-### Model 4 Training & Tuning
-```{r model 4, message=FALSE, warning=FALSE}
-# add velo difference as a variables
-treeData.4 <-
-  masterData %>% 
-  mutate_at(vars(brakingMetrics,propulsiveMetrics), custom.scoring) %>%
-  group_by(Name, Date) %>%
-  summarise_at(vars(brakingMetrics, propulsiveMetrics), mean, na.rm = TRUE) %>%
-  left_join(labels, by = 'Name') %>%
-  ungroup() %>%
-  mutate(Class = ifelse(is.na(Class), 'Unknown',Class)) %>%
-  group_by(Name) %>%
-  mutate(Force.Diff = Avg..Relative.Propulsive.Force - Avg..Relative.Braking.Force) %>%
-  mutate(Per = n()/1118) %>%
-  mutate(Outlier = ifelse(Per > .02 & Avg..Propulsive.Force <= quantile(Avg..Propulsive.Force, .6, na.rm = TRUE),1,0)) %>%
-  filter(Outlier == 0) %>%
-  mutate(Propulsive.Velo.Diff = Avg..Propulsive.Velocity - Takeoff.Velocity) %>% # add relative force difference
-  select(Name,Avg..Relative.Braking.Force, Avg..Relative.Propulsive.Force, Avg..Propulsive.Velocity, Takeoff.Velocity,
-         Propulsive.Velo.Diff,Force.Diff, Class) %>% na.omit()
-
-train.tree.4 <- treeData.4[,-1] %>% filter(Class != 'Unknown')
-test.tree.4 <- treeData.4[,-1] %>% filter(Class == 'Unknown')
-
-# Resampling method of repeated cross validation
-fitControl <- trainControl(
-  method = "repeatedcv",
-  number = 10,
-  repeats = 10
-)
-
-# Model Training
-tuneGrid <- expand.grid(cp = seq(0, 0.5, 0.05))
-set.seed(234)
-cart.model.4 <- train(Class ~., data = train.tree.4,
-                    method = 'rpart',
-                    tuneGrid = tuneGrid,
-                    trControl = fitControl)
-
-cart.model.4
-
-```
-
-
-```{r plot model 4}
-plot(cart.model.4$finalModel)
-text(cart.model.4$finalModel)
-```
-
-### Predicting Outcomes
-```{r predicting model 4}
-# get predicted labels
-cart.4.pred <- predict.train(cart.model.4, newdata = test.tree.4)
-
-# Distribution of predicted labels
-sum(cart.4.pred == 'Athletic')
-sum(cart.4.pred == 'Power')
-sum(cart.4.pred == 'Momentum')
-
-# assign labels to athletes and view results
-treeData %>%
-  filter(Class == 'Unknown') %>%
-  select(Name)%>%
-  add_column(pred.class = cart.4.pred) %>% view()
-
-```
-
-<br>
-
-### Conclusion
-<i>
-Seemed to have hit a cap with model 4.  The accuracy did not increase by adding the force difference metric, because it still chose the same braking metircs as model 3.  When I took those metrics away, it chose to evaluate on relative braking force.  I thought that might be better but the accuracy actually went down.  It seems maybe a more complex tree model may be needed  <i>
-<br>
-<br>

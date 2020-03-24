@@ -1,0 +1,334 @@
+---
+title: "random forest"
+author: "Jacob Buffa"
+date: "March 24, 2020"
+output: html_document
+---
+
+## MODEL OBJECTIVE
+<p> kmeans, bagged CART, and CART models have all been tried so far.  CART has gotten the closest.  The decision tree created had the logic that I thought would be correct, but it still led to under classifying elite power athletes.  More complexity was needed. <p>
+A Random Forest Model was chosen to increase complexity with a different tuning parameter without losing interpretibility.
+<br>
+A bagged CART model was chosen first because there are no tuning parameters. Thought of as a 'baseline'.  Now a simple rpart classification tree is selected in order to view and analyze decision making proces of the model
+<br>
+### Load Libraries & Data
+```{r libraries, message=FALSE, warning=FALSE}
+library(caret)
+library(randomForest)
+library(tidyverse)
+library(igraph)
+library(ggraph)
+
+# Scoring Function
+custom.scoring <- function(x){
+  scale(x)*10+50
+}
+
+# tree graphing function
+tree_func <- function(final_model, tree_num) {
+  
+  # get tree by index
+  tree <- randomForest::getTree(final_model, 
+                                k = tree_num, 
+                                labelVar = TRUE) %>%
+    tibble::rownames_to_column() %>%
+    # make leaf split points to NA, so the 0s won't get plotted
+    mutate(`split point` = ifelse(is.na(prediction), `split point`, NA))
+  
+  # prepare data frame for graph
+  graph_frame <- data.frame(from = rep(tree$rowname, 2),
+                            to = c(tree$`left daughter`, tree$`right daughter`))
+  
+  # convert to graph and delete the last node that we don't want to plot
+  graph <- graph_from_data_frame(graph_frame) %>%
+    delete_vertices("0")
+  
+  # set node labels
+  V(graph)$node_label <- gsub("_", " ", as.character(tree$`split var`))
+  V(graph)$leaf_label <- as.character(tree$prediction)
+  V(graph)$split <- as.character(round(tree$`split point`, digits = 2))
+  
+  # plot
+  plot <- ggraph(graph, 'dendrogram') + 
+    theme_bw() +
+    geom_edge_link() +
+    geom_node_point() +
+    geom_node_text(aes(label = node_label), na.rm = TRUE, repel = TRUE) +
+    geom_node_label(aes(label = split), vjust = 2.5, na.rm = TRUE, fill = "white") +
+    geom_node_label(aes(label = leaf_label, fill = leaf_label), na.rm = TRUE, 
+					repel = TRUE, colour = "white", fontface = "bold", show.legend = FALSE) +
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.background = element_blank(),
+          plot.background = element_rect(fill = "white"),
+          panel.border = element_blank(),
+          axis.line = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          plot.title = element_text(size = 18))
+  
+  print(plot)
+}
+
+# Tables
+athleteInfo <- read.csv("AthleteInformation1.csv")
+allData <- read.csv("FINAL TABLE.csv")
+```
+
+
+### Data Processing
+```{r process, warning=FALSE, message=FALSE}
+# ORGANIZE 
+athleteInfo <-
+  athleteInfo %>%
+  transform(Birthday = as.Date(Birthday, format = "%m/%d/%Y")) %>%
+  mutate(Gender = ifelse(Gender == "F", "F","M"))
+
+masterData <- 
+  allData %>%
+  mutate(Avg..Relative.Braking.Force = (Avg..Braking.Force/System.Weight)*100,
+         Avg..Relative.Braking.Power = Avg..Braking.Power/System.Weight,
+         Avg..Relative.Propulsive.Power = Avg..Propulsive.Power/System.Weight) %>%
+  mutate(Avg..Braking.Velocity = abs(Avg..Braking.Velocity), # change negative numbers to positive
+         Avg..Braking.Power = abs(Avg..Braking.Power),
+         Avg..Relative.Braking.Power = abs(Avg..Relative.Braking.Power)) %>%
+  transform(Date = as.Date(Date, format = "%m/%d/%Y"),
+            Name = as.character(Name)) %>%
+  left_join(athleteInfo, by = "Name") %>%
+  filter(Gender == "M")
+
+variables <- colnames(masterData)
+brakingMetrics <- variables[c(5:7,12,13,16,17,19)]
+propulsiveMetrics <- variables[c(9:11,14,15,47,53:55)]
+balanceMetrics <- variables[c(25:34)]
+
+# CENTER AND SCALE
+clusterData <- masterData %>% 
+  mutate_at(vars(brakingMetrics,propulsiveMetrics), custom.scoring) %>%
+  group_by(Name) %>%
+  summarise_at(vars(brakingMetrics, propulsiveMetrics), mean, na.rm = TRUE)
+clusterData <- na.omit(clusterData) # remove NA
+
+# IDENTIFY CORRELATED PREDICTORS
+cormatrix <- cor(clusterData[,-1])
+summary(cormatrix[upper.tri(cormatrix)])
+#highlyCor <- findCorrelation(cormatrix, cutoff = .8) 
+#filterclusterData <- clusterData[,-highlyCor]
+```
+Data has been cleaned, centered, and scaled for the model.  Normally would elimate linear dependencies, but Performance Driver metrics have been selected based on domain expertise.
+<br> 
+
+
+```{r assign labels, message=FALSE, warning=FALSE}
+labels <- 
+  clusterData %>%
+  mutate(Class = case_when(Takeoff.Velocity > Avg..Propulsive.Velocity+2 &
+                             Avg..Propulsive.Force > Avg..Propulsive.Velocity+2 ~ 'Momentum',
+                           Takeoff.Velocity <= Avg..Propulsive.Velocity+2 &
+                             Avg..Propulsive.Force <= Avg..Propulsive.Velocity+2 &
+                             Avg..Braking.Force < Avg..Braking.Velocity-2 ~ 'Power',
+                           Takeoff.Velocity <= Avg..Propulsive.Velocity+2 &
+                             Avg..Propulsive.Force <= Avg..Propulsive.Velocity+2 &
+                             Avg..Braking.Force >= Avg..Braking.Velocity-2 ~ 'Athletic')) %>%
+  select(Name, Class)
+
+treeData <-
+  masterData %>% 
+  mutate_at(vars(brakingMetrics,propulsiveMetrics), custom.scoring) %>%
+  group_by(Name, Date) %>%
+  summarise_at(vars(brakingMetrics, propulsiveMetrics), mean, na.rm = TRUE) %>%
+  left_join(labels, by = 'Name') %>%
+  ungroup() %>%
+  mutate(Class = ifelse(is.na(Class), 'Unknown',Class)) %>%
+  group_by(Name) %>%
+  mutate(Per = n()/1118) %>%
+  mutate(Outlier = ifelse(Per > .02 & Avg..Propulsive.Force <= quantile(Avg..Propulsive.Force, .6, na.rm = TRUE),1,0)) %>%
+  filter(Outlier == 0) %>%
+  select(Name, Avg..Braking.Force, Avg..Braking.Velocity, Avg..Relative.Braking.Force, Avg..Propulsive.Force, 
+         Avg..Relative.Propulsive.Force, Avg..Propulsive.Velocity,Avg..Propulsive.Force, Takeoff.Velocity,
+         Class) %>% na.omit()
+```
+Condense data to assign labels to the athletes that I am confident in, and fit the logic derived from Performance Driver metrics.  Then expand data back to have more data points to train the model.  Identify Athletes that have enough tests to bias the sample, and only keep the top 40% of their tests.  Finally, remove and NA values.  I want to leave out the Velocity difference variable in the first model just to see what variable importance the model selects first.
+<br>
+
+### Data Splitting
+
+```{r training_testing, message=FALSE, warning=FALSE}
+train.tree <- treeData[,-1] %>% filter(Class != 'Unknown')
+test.tree <- treeData[,-1] %>% filter(Class == 'Unknown')
+```
+Ideally these would be random splits.  But for the purposes of this model, I have split the training set and testing set based on athletes with and without pre-assigned labels
+<br>
+
+### Model Training & Tuning
+```{r model, message=FALSE, warning=FALSE}
+# Resampling method of repeated cross validation
+fitControl <- trainControl(
+  method = "repeatedcv",
+  number = 10,
+  repeats = 10
+)
+
+# Model Training
+tuneGrid <- expand.grid(.mtry = (1:9))
+set.seed(234)
+rf.model <- train(Class ~., data = train.tree,
+                    method = 'rf', 
+                    tuneGrid = tuneGrid,
+                    trControl = fitControl)
+
+rf.model
+```
+
+```{r plot model}
+plot(rf.model)
+# min number of trees
+tree_num <- which(rf.model$finalModel$forest$ndbigtree == min(rf.model$finalModel$forest$ndbigtree))
+tree_func(rf.model$finalModel, tree_num)
+```
+
+
+### Predicting Outcomes
+```{r}
+# get predicted labels
+rf.pred <- predict.train(rf.model, newdata = test.tree)
+
+# Distribution of predicted labels
+sum(rf.pred == 'Athletic')
+sum(rf.pred == 'Power')
+sum(rf.pred == 'Momentum')
+
+# assign labels to athletes and view results
+treeData %>%
+  filter(Class == 'Unknown') %>%
+  select(Name)%>%
+  add_column(pred.class = rf.pred) %>% view()
+```
+
+<br>
+
+### Conclusion
+<i>By far the best model so far. Highest accuracy score, and liked the athlete predictions a lot.  There were a few misclassifications on athletes that I felt were obvious.  It makes me question if the original logic I defined is 100% correct.  I could assign more labels to athletes to help improve the training set. Either way, I think I have found the model type that is the sweet spot between complexity and interpretibility for this problem.  Next step is to add in the propulsive velo difference variable<i>
+<br>
+<br>
+
+### Model 2 Training & Tuning
+```{r model 2, message=FALSE, warning=FALSE}
+# add velo difference as a variables
+treeData.2 <-
+  masterData %>% 
+  mutate_at(vars(brakingMetrics,propulsiveMetrics), custom.scoring) %>%
+  group_by(Name, Date) %>%
+  summarise_at(vars(brakingMetrics, propulsiveMetrics), mean, na.rm = TRUE) %>%
+  left_join(labels, by = 'Name') %>%
+  ungroup() %>%
+  mutate(Class = ifelse(is.na(Class), 'Unknown',Class)) %>%
+  group_by(Name) %>%
+  mutate(Per = n()/1118) %>%
+  mutate(Outlier = ifelse(Per > .02 & Avg..Propulsive.Force <= quantile(Avg..Propulsive.Force, .6, na.rm = TRUE),1,0)) %>%
+  filter(Outlier == 0) %>%
+  mutate(Propulsive.Velo.Diff = Avg..Propulsive.Velocity - Takeoff.Velocity) %>%
+  select(Name, Avg..Braking.Force, Avg..Braking.Velocity, Avg..Relative.Braking.Force, Avg..Propulsive.Force, 
+         Avg..Relative.Propulsive.Force, Avg..Propulsive.Velocity, Takeoff.Velocity,
+         Propulsive.Velo.Diff,Class) %>% na.omit()
+
+train.tree.2 <- treeData.2[,-1] %>% filter(Class != 'Unknown')
+test.tree.2 <- treeData.2[,-1] %>% filter(Class == 'Unknown')
+
+# Resampling method of repeated cross validation
+fitControl <- trainControl(
+  method = "repeatedcv",
+  number = 10,
+  repeats = 10
+)
+
+# Model Training
+tuneGrid <- expand.grid(.mtry = (1:9))
+set.seed(234)
+rf.model.2 <- train(Class ~., data = train.tree.2,
+                    method = 'rf', 
+                    tuneGrid = tuneGrid,
+                    trControl = fitControl)
+
+rf.model.2
+```
+
+
+```{r plot model 2}
+plot(rf.model.2)
+# min number of trees
+tree_num <- which(rf.model.2$finalModel$forest$ndbigtree == min(rf.model.2$finalModel$forest$ndbigtree))
+tree_func(rf.model.2$finalModel, tree_num)
+```
+
+
+### Predicting Outcomes of Model 2
+```{r}
+# get predicted labels
+rf.pred.2 <- predict.train(rf.model.2, newdata = test.tree.2)
+
+# Distribution of predicted labels
+sum(rf.pred.2 == 'Athletic')
+sum(rf.pred.2 == 'Power')
+sum(rf.pred.2 == 'Momentum')
+
+# assign labels to athletes and view results
+treeData %>%
+  filter(Class == 'Unknown') %>%
+  select(Name)%>%
+  add_column(pred.class = rf.pred.2) %>% view()
+```
+
+<br>
+
+### Conclusion
+<i>Slightly more accurate than the first model.  Which would make this the most accurate so far.  After reviewing the predicted labels, and my original labels, I am beggining to think the original logic laid out to classify athletes is flawed.  I am going to try another method of labeling.  I am going to label and train the model on only high level athletes that I am confident in.  I think younger, undeveloped athletes are difficult to label.  We will see if this changes anything in the next model. <i>
+<br>
+<br>
+
+### Model 3 Training & Tuning
+```{r model 3, message=FALSE, warning=FALSE}
+# add velo difference as a variables
+treeData.3 <-
+  masterData %>% 
+  mutate_at(vars(brakingMetrics,propulsiveMetrics), custom.scoring) %>%
+  group_by(Name, Date) %>%
+  summarise_at(vars(brakingMetrics, propulsiveMetrics), mean, na.rm = TRUE) %>%
+  left_join(labels, by = 'Name') %>%
+  ungroup() %>%
+  mutate(Class = case_when(Name %in% powerA)) %>%
+  group_by(Name) %>%
+  mutate(Per = n()/1118) %>%
+  mutate(Outlier = ifelse(Per > .02 & Avg..Propulsive.Force <= quantile(Avg..Propulsive.Force, .6, na.rm = TRUE),1,0)) %>%
+  filter(Outlier == 0) %>%
+  mutate(Propulsive.Velo.Diff = Avg..Propulsive.Velocity - Takeoff.Velocity) %>%
+  select(Name, Avg..Braking.Force, Avg..Braking.Velocity, Avg..Relative.Braking.Force, Avg..Propulsive.Force, 
+         Avg..Relative.Propulsive.Force, Avg..Propulsive.Velocity, Takeoff.Velocity,
+         Propulsive.Velo.Diff,Class) %>% na.omit()
+
+train.tree.3 <- treeData.2[,-1] %>% filter(Class != 'Unknown')
+test.tree.3 <- treeData.2[,-1] %>% filter(Class == 'Unknown')
+
+# Resampling method of repeated cross validation
+fitControl <- trainControl(
+  method = "repeatedcv",
+  number = 10,
+  repeats = 10
+)
+
+# Model Training
+tuneGrid <- expand.grid(.mtry = (1:9))
+set.seed(234)
+rf.model.2 <- train(Class ~., data = train.tree.2,
+                    method = 'rf', 
+                    tuneGrid = tuneGrid,
+                    trControl = fitControl)
+
+rf.model.2
+```
+
+
+
