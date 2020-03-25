@@ -235,7 +235,7 @@ treeData %>%
 
 ### Conclusion
 <i>
-This model was signifacntly more accurate than the first.  The primary branch used velocity difference which was the goal.  Ideally, momentum athletes would be on the left side only, and the right side can switch back and forth between athletic and power.  This model is close but not quite there.  The next step is to remove avg. propulsive velocity. <i>
+This model was signifacntly more accurate than the first.  The primary branch used velocity difference which was the goal.  Ideally, momentum athletes would be on the left side only, and the right side can switch back and forth between athletic and power.  This model is close but not quite there.  The next step is to remove avg. propulsive force. <i>
 <br>
 <br>
 
@@ -315,25 +315,161 @@ This model was slightly more accurat than the second.  Stripping away Avg Propul
 <br>
 
 
+### Model 4 Training & Tuning
+```{r model 4, message=FALSE, warning=FALSE}
+# add velo difference as a variables
+treeData.4 <-
+  masterData %>% 
+  mutate_at(vars(propulsiveMetrics), custom.scoring) %>%
+  group_by(Name, Date) %>%
+  summarise_at(vars(propulsiveMetrics), mean, na.rm = TRUE) %>%
+  ungroup() %>%
+  mutate(Class = case_when(Name %in% momentumAthletes ~ 'Momentum',
+                           Name %in% athleticAthletes ~ 'Athletic',
+                           Name %in% powerAthletes ~ 'Power',
+                           Name %in% trainingAthletes ~ 'Training',
+                           !Name %in% c(momentumAthletes,athleticAthletes,powerAthletes,trainingAthletes) ~ 'Unknown')) %>%
+  group_by(Name) %>%
+  mutate(Per = n()/1118) %>%
+  mutate(Outlier = ifelse(Per > .02 & Avg..Propulsive.Force <= quantile(Avg..Propulsive.Force, .6, na.rm = TRUE),1,0)) %>%
+  filter(Outlier == 0) %>%
+  #mutate(Propulsive.Velo.Diff = Avg..Propulsive.Velocity - Takeoff.Velocity) %>%
+  select(Name,Avg..Relative.Propulsive.Force, Avg..Propulsive.Velocity, Takeoff.Velocity,Class) %>% na.omit()
+
+train.tree.4 <- treeData.4[,-1] %>% filter(Class %in% c('Momentum','Athletic','Power'))
+test.tree.4 <- treeData.4[,-1] %>% filter(Class == 'Training')
+
+# Resampling method of repeated cross validation
+fitControl <- trainControl(
+  method = "repeatedcv",
+  number = 10,
+  repeats = 10
+)
+
+# Model Training
+tuneGrid <- expand.grid(cp = seq(0, 0.5, 0.05))
+set.seed(234)
+cart.model.4 <- train(Class ~., data = train.tree.4,
+                    method = 'rpart', 
+                    tuneGrid = tuneGrid,
+                    trControl = fitControl)
+
+cart.model.4
+
+```
+
+```{r plot model.4}
+plot(cart.model.4$finalModel)
+text(cart.model.4$finalModel)
+```
+
+
+### Predicting Outcomes
+```{r predicting model 4}
+# get predicted labels
+cart.4.pred <- predict.train(cart.model.4, newdata = test.tree.4)
+
+# Distribution of predicted labels
+sum(cart.4.pred == 'Athletic')
+sum(cart.4.pred == 'Power')
+sum(cart.4.pred == 'Momentum')
+
+# assign labels to athletes and view results
+treeData.4 %>%
+  filter(Class == 'Training') %>%
+  select(Name)%>%
+  add_column(pred.class = cart.4.pred) %>% view()
+
+```
+
+<br>
+
+### Conclusion
+<i>
+This model was slightly more accurate by changing up the training set labels.  Howver, I need to create ratio variables in order for it to be the most accurate.  Too many athletes were switching between labels when testing multiple times. Momentum and power athletes should never crosspver. <i>
+<br>
+<br>
 
 
 
 
+### Model 5 Training & Tuning
+```{r model 5, message=FALSE, warning=FALSE}
+# add velo difference as a variables
+treeData.5 <-
+  masterData %>% 
+  mutate_at(vars(propulsiveMetrics), custom.scoring) %>%
+  group_by(Name, Date) %>%
+  summarise_at(vars(propulsiveMetrics), mean, na.rm = TRUE) %>%
+  ungroup() %>%
+  mutate(Class = case_when(Name %in% momentumAthletes ~ 'Momentum',
+                           Name %in% athleticAthletes ~ 'Athletic',
+                           Name %in% powerAthletes ~ 'Power',
+                           Name %in% trainingAthletes ~ 'Training',
+                           !Name %in% c(momentumAthletes,athleticAthletes,powerAthletes,trainingAthletes) ~ 'Unknown')) %>%
+  mutate(Accel.TakeoffVelo.Diff = Avg..Relative.Propulsive.Force - Takeoff.Velocity,
+         Velo.Diff = Avg..Propulsive.Velocity - Takeoff.Velocity) %>%
+  group_by(Name) %>%
+  mutate(Per = n()/1118) %>%
+  mutate(Outlier = ifelse(Per > .02 & Avg..Propulsive.Force <= quantile(Avg..Propulsive.Force, .6, na.rm = TRUE),1,0)) %>%
+  filter(Outlier == 0) %>%
+  #mutate(Propulsive.Velo.Diff = Avg..Propulsive.Velocity - Takeoff.Velocity) %>%
+  select(Name,Avg..Relative.Propulsive.Force, Avg..Propulsive.Velocity, Takeoff.Velocity, Accel.TakeoffVelo.Diff,
+         Velo.Diff, Class) %>% na.omit()
+
+train.tree.5 <- treeData.5[,-1] %>% filter(Class %in% c('Momentum','Athletic','Power'))
+test.tree.5 <- treeData.5[,-1] %>% filter(Class == 'Training')
+
+# Resampling method of repeated cross validation
+fitControl <- trainControl(
+  method = "repeatedcv",
+  number = 10,
+  repeats = 10
+)
+
+# Model Training
+tuneGrid <- expand.grid(cp = seq(0, 0.5, 0.05))
+set.seed(234)
+cart.model.5 <- train(Class ~., data = train.tree.5,
+                    method = 'rpart', 
+                    tuneGrid = tuneGrid,
+                    trControl = fitControl)
+
+cart.model.5
+
+```
+
+```{r plot model.4}
+plot(cart.model.5$finalModel)
+text(cart.model.5$finalModel)
+```
 
 
 
+### Predicting Outcomes
+```{r predicting model 5}
+# get predicted labels
+cart.5.pred <- predict.train(cart.model.5, newdata = test.tree.5)
+
+# Distribution of predicted labels
+sum(cart.5.pred == 'Athletic')
+sum(cart.5.pred == 'Power')
+sum(cart.5.pred == 'Momentum')
+
+# assign labels to athletes and view results
+treeData.5 %>%
+  filter(Class == 'Training') %>%
+  select(Name)%>%
+  add_column(pred.class = cart.5.pred) %>% view()
+
+```
 
 
 
+<br>
 
-
-
-
-
-
-
-
-
-
-
-
+### Conclusion
+<i>
+This model was the most accurate so far at 77% with a cp level of .00.  However, I was very happy with the logic and the tree and the testing labels.  The only athletes that were problems were Aaron Schromm, Evan Clawson, and Ben Kennebeck.  These athletes had power and momentum labels.  That should never happen.  All in all this has been the best model yet. <i>
+<br>
+<br>

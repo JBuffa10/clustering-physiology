@@ -1,8 +1,17 @@
-powerAthletes <- 'Aaron Schromm','Cody Klotz','','Cruz Valencia','Derek Stanley','Drake Lubin','Jordan Johnson','Kyle Fowler','Matthew Nolan','Mycole Pruitt','Tyler Reichenborn','Zach Bryce','','','','','','','','','','','','',''
+powerAthletes <- 'Cody Klotz','Isaiah Williams','Cruz Valencia','Cade Mahn','Derek Stanley','Drake Lubin','Jordan Johnson','Kyle Fowler','Matthew Nolan',
+'Clayton Giorgio','Mycole Pruitt','Tyler Reichenborn','Zach Bryce','Ryan Hoshaw','Markel Smith','Max Datoli','Robert Ford 3','Wyatt Brockman','Robby Manor'
 
-athleticAthletes <- 'Jacob Buffa','Brett Fischer','Andrew Buescher','Anthony Green','Arturo Romero','Brady Cook','Braxton Martinez','Bryce Horstman','Cade Schares','Cameron Haegele','Clayton Giorgio',
-'Cody Creed','Darian Crisp','Dennis Jordan','DJ Miller','Evan Martin','Isaiah Williams','Jehu','Josh Bunselmeyer','Matt Rehder','Athletic','Taylor Robinson','Tony Adams','',''
+athleticAthletes <- 'Alex Hoff','Ben Borgann','Ben Smith','Braden Barnard','Jacob Buffa','Brett Fischer','Andrew Buescher','Anthony Green','Arturo Romero','Braxton Martinez',
+'Bryce Horstman','Cade Schares','Cameron Haegele','Cody Creed','Darian Crisp','Dennis Jordan','DJ Miller','Evan Martin','Jehu','Josh Bunselmeyer','Matt Rehder',
+'Taylor Robinson','Tony Adams','Zeb Roos','Dexter Swims','Eric Loomis','Ian Lohse','Nathaniel Sems'
 
-momentumAtletes <- 'Alex Hoff','Andrew Ness','Braden Burcham','Ben Smith','Blaise Matheny','Bryce Grossius','Charlie Bourneuf','Cody Siebenberger','Denton McNamee','Elias Stevens','Matthew Kaiser',
-'Ethan Snarr','Gavyn Dockery','Greg Hamilton','Hunter Counton','Ian Funk','Ian Lohse','Jake Matheny','Keaton Greiwe','Landon Johnson','Matthew Arnold','Nathan Beaton','Nicholas Harms','Patrick Deemer',
-'Paul Noel','Quinton Dacus','Ryan Malzahn', 'Ryan Miller', 'Tate Matheny', 'Tommy Shriver','Troy Schneider','Tyson James','Zach Brasier','Zach Voss','Zeb Roos'
+momentumAthletes <- 'Alex Henagean','Andrew Ness','Braden Burcham','Blaise Matheny','Brady Cook','Bryce Grossius','Charlie Bourneuf','Cody Siebenberger','Elias Stevens',
+'Matthew Kaiser','Hunter Counton','Jake Matheny','Keaton Greiwe','Landon Johnson','Matthew Arnold','Nathan Beaton','Nicholas Harms','Paul Noel','Ryan Malzahn', 
+'Ryan Miller', 'Tate Matheny', 'Tommy Shriver','Troy Schneider','Tyson James','Zach Brasier','Zach Voss','Carson Maloney','Isaac Parks'
+
+trainingAthletes <- 'Aaron Schromm','Adam Lackey','Adam Rakowiecki','Aidan McNamee','Alex Gladson','Anthony Altobella','Andrew Hartle','Avery Himes','Ben Axelrod',
+'Ben Kennebeck','Ben Sems','Brady Heinzmann','Brandon Murphy','Brayden Arnold','Brandon Odehnal','Cannon Hritz','Cherokee Boynton','Cole Bornhop','Craig Mcgee',
+'Daniel Covert','Denton McNamee','DeAngelo Sommers','Derek Archer','Drake Kanallakan','Dylan Mooney','Erik Keiweit','Erich Dodge','Evan Clawson','Evan Fufaro',
+'Gavin Oswald','Gavyn Dockery','Ian Funk','Greg Hamilton','Grant Middendorf','Grant Miller','Jack Hunke','Jackson Hogan','James Bradley','James Murray','Jonathon Bonner',
+'Josh Falke','JT Mabry','Louis Niemerg','Michael Long','Mike Fuller','Mitchell Davis','Nick Alberico','Nick Heine','Noah Reichman','Patrick Deemer','Tanner Marshall',
+'Tommy Woods','Tripp Johns','Ty Stauss','Xavier Flores','Zane Roos'

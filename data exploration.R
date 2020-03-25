@@ -14,15 +14,23 @@ allData <- read.csv("FINAL TABLE.csv")
 ## ATHLETE TYPES ##
 ###################
 
-powerAthletes <- c('Aaron Schromm','Marcus Greer','Jordan Johnson','Evan Martin','Ben Sems','Derek Stanley','Drake Lubin','Jackson Burrell',
-                   'Clayton Giorgio','Mike Fuller','Tony Adams','Mycole Pruitt','Josh Sutton','Ian Lohse','Eric Loomis','Jack Hunke','Tyler Reichenborn',
-                   'Robby Manor','Matthew Nolan','Darian Crisp','Evan Fufaro')
-momentumAthletes <- c('Zach Brasier','Tripp Johns','Blaise Matheny','Bryce Grossius','Zeb Roos','Jake Matheny','Ian Funk','Matthew Arnold',
-                      'Ryan Malzahn','Tate Matheny','James Murray','Jonathon Bonner','Dennis Jordan' ,'Zane Roos','Tommy Woods','Elias Stevens','Zach Voss',
-                      'Paul Noel','Nicholas Harms','Craig Mcgee','Derek Archer','Gavyn Dockery','Troy Schneider','Quinton Dacus','Braden Burcham','Tom McPherson')
-athleticAthletes <- c('Nathaniel Sems','Braxton Martinez','Tyson James','JT Mabry','Arturo Romero','Cameron Haegele','Bryce Horstman',
-                      'Taylor Robinson','Isaiah Williams','Brett Fischer','Jacob Buffa','Robert Ford 3','DJ Miller','Josh Bunselmeyer','Cody Klotz',
-                      'Brady Cook','Jehu','Alex Henagean','Anthony Green','Ben Smith','Matt Rehder','Cody Creed','Andrew Buescher','Mitchell Davis','Dexter Swims')
+powerAthletes <- c('Cody Klotz','Isaiah Williams','Cruz Valencia','Cade Mahn','Derek Stanley','Drake Lubin','Jordan Johnson','Kyle Fowler','Matthew Nolan',
+'Clayton Giorgio','Mycole Pruitt','Tyler Reichenborn','Zach Bryce','Ryan Hoshaw','Markel Smith','Max Datoli','Robert Ford 3','Wyatt Brockman','Robby Manor')
+
+athleticAthletes <- c('Alex Hoff','Ben Borgann','Ben Smith','Braden Barnard','Jacob Buffa','Brett Fischer','Andrew Buescher','Anthony Green','Arturo Romero','Braxton Martinez',
+'Bryce Horstman','Cade Schares','Cameron Haegele','Cody Creed','Darian Crisp','Dennis Jordan','DJ Miller','Evan Martin','Jehu','Josh Bunselmeyer','Matt Rehder',
+'Taylor Robinson','Tony Adams','Zeb Roos','Dexter Swims','Eric Loomis','Ian Lohse','Nathaniel Sems')
+
+momentumAthletes <- c('Alex Henagean','Andrew Ness','Braden Burcham','Blaise Matheny','Brady Cook','Bryce Grossius','Charlie Bourneuf','Cody Siebenberger','Elias Stevens',
+'Matthew Kaiser','Hunter Counton','Jake Matheny','Keaton Greiwe','Landon Johnson','Matthew Arnold','Nathan Beaton','Nicholas Harms','Paul Noel','Ryan Malzahn', 
+'Ryan Miller', 'Tate Matheny', 'Tommy Shriver','Troy Schneider','Tyson James','Zach Brasier','Zach Voss','Carson Maloney','Isaac Parks')
+
+trainingAthletes <- c('Aaron Schromm','Adam Lackey','Adam Rakowiecki','Aidan McNamee','Alex Gladson','Anthony Altobella','Andrew Hartle','Avery Himes','Ben Axelrod',
+'Ben Kennebeck','Ben Sems','Brady Heinzmann','Brandon Murphy','Brayden Arnold','Brandon Odehnal','Cannon Hritz','Cherokee Boynton','Cole Bornhop','Craig Mcgee',
+'Daniel Covert','Denton McNamee','DeAngelo Sommers','Derek Archer','Drake Kanallakan','Dylan Mooney','Erik Keiweit','Erich Dodge','Evan Clawson','Evan Fufaro',
+'Gavin Oswald','Gavyn Dockery','Ian Funk','Greg Hamilton','Grant Middendorf','Grant Miller','Jack Hunke','Jackson Hogan','James Bradley','James Murray','Jonathon Bonner',
+'Josh Falke','JT Mabry','Louis Niemerg','Michael Long','Mike Fuller','Mitchell Davis','Nick Alberico','Nick Heine','Noah Reichman','Patrick Deemer','Tanner Marshall',
+'Tommy Woods','Tripp Johns','Ty Stauss','Xavier Flores','Zane Roos')
 
 
 ########################
@@ -56,33 +64,23 @@ clusterData <- masterData %>%
 # remove NA
 clusterData <- na.omit(clusterData)
 
-### VIEW THE AVERAGES OR CENTERS FOR EACH GROUP
+
+
+#### View Different Logic Structures For Labelling ###
+
+# Momentum
 clusterData %>%
-  filter(Name %in% powerAthletes) %>%
-  summarise_at(vars(brakingMetrics,propulsiveMetrics), mean) %>% view()
-
-
+  filter(Avg..Relative.Propulsive.Force <= Takeoff.Velocity - 5,
+         Avg..Propulsive.Velocity < Takeoff.Velocity,
+         Avg..Relative.Propulsive.Force > 40) %>% view()
+# No Power
 clusterData %>%
-  filter(Name %in% momentumAthletes) %>%
-  summarise_at(vars(brakingMetrics, propulsiveMetrics), mean) %>% view()
+  filter(Avg..Relative.Propulsive.Force < 40) %>% view()
 
-
+# Power
 clusterData %>%
-  filter(Name %in% athleticAthletes) %>%
-  summarise_at(vars(brakingMetrics, propulsiveMetrics), mean) %>% view()
+  filter(Avg..Relative.Propulsive.Force >= Avg..Propulsive.Velocity + 5,
+         Avg..Relative.Propulsive.Force >= Takeoff.Velocity,
+         Avg..Relative.Propulsive.Force > 50) %>% view()
 
 
-clusterData %>%
-  mutate(Avg.Braking.Total = (Avg..Braking.Force + Avg..Relative.Braking.Force + Braking.RFD)/3,
-         Avg.Propulsive.Total = (Avg..Propulsive.Velocity + Avg..Propulsive.Force + Avg..Relative.Propulsive.Force)/3) %>%
-  filter(Takeoff.Velocity >= Avg..Propulsive.Velocity+2) %>%
-  select(Name, Avg..Propulsive.Force, Avg..Propulsive.Velocity, Takeoff.Velocity, Avg..Propulsive.Power) %>% view()
-
-clusterData %>%
-  filter(Avg..Braking.Velocity > Avg..Braking.Force,
-         Braking.RFD > Avg..Braking.Velocity) %>%
-  select(Name) %>% view()
-
-# View individual athletes
-clusterData %>%
-  filter(Name %in% c('Ian Funk')) %>% view()
