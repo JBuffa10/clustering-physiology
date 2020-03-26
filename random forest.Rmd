@@ -72,6 +72,24 @@ tree_func <- function(final_model, tree_num) {
   print(plot)
 }
 
+powerAthletes <- c('Cody Klotz','Isaiah Williams','Cruz Valencia','Cade Mahn','Derek Stanley','Drake Lubin','Jordan Johnson','Kyle Fowler','Matthew Nolan',
+'Clayton Giorgio','Mycole Pruitt','Tyler Reichenborn','Zach Bryce','Ryan Hoshaw','Markel Smith','Max Datoli','Robert Ford 3','Wyatt Brockman','Robby Manor')
+
+athleticAthletes <- c('Alex Hoff','Ben Borgann','Ben Smith','Braden Barnard','Jacob Buffa','Brett Fischer','Andrew Buescher','Anthony Green','Arturo Romero','Braxton Martinez',
+'Bryce Horstman','Cade Schares','Cameron Haegele','Cody Creed','Darian Crisp','Dennis Jordan','DJ Miller','Evan Martin','Jehu','Josh Bunselmeyer','Matt Rehder',
+'Taylor Robinson','Tony Adams','Zeb Roos','Dexter Swims','Eric Loomis','Ian Lohse','Nathaniel Sems')
+
+momentumAthletes <- c('Alex Henagean','Andrew Ness','Braden Burcham','Blaise Matheny','Brady Cook','Bryce Grossius','Charlie Bourneuf','Cody Siebenberger','Elias Stevens',
+'Matthew Kaiser','Hunter Counton','Jake Matheny','Keaton Greiwe','Landon Johnson','Matthew Arnold','Nathan Beaton','Nicholas Harms','Paul Noel','Ryan Malzahn', 
+'Ryan Miller', 'Tate Matheny', 'Tommy Shriver','Troy Schneider','Tyson James','Zach Brasier','Zach Voss','Carson Maloney','Isaac Parks')
+
+trainingAthletes <- c('Aaron Schromm','Adam Lackey','Adam Rakowiecki','Aidan McNamee','Alex Gladson','Anthony Altobella','Andrew Hartle','Avery Himes','Ben Axelrod',
+'Ben Kennebeck','Ben Sems','Brady Heinzmann','Brandon Murphy','Brayden Arnold','Brandon Odehnal','Cannon Hritz','Cherokee Boynton','Cole Bornhop','Craig Mcgee',
+'Daniel Covert','Denton McNamee','DeAngelo Sommers','Derek Archer','Drake Kanallakan','Dylan Mooney','Erik Keiweit','Erich Dodge','Evan Clawson','Evan Fufaro',
+'Gavin Oswald','Gavyn Dockery','Ian Funk','Greg Hamilton','Grant Middendorf','Grant Miller','Jack Hunke','Jackson Hogan','James Bradley','James Murray','Jonathon Bonner',
+'Josh Falke','JT Mabry','Louis Niemerg','Michael Long','Mike Fuller','Mitchell Davis','Nick Alberico','Nick Heine','Noah Reichman','Patrick Deemer','Tanner Marshall',
+'Tommy Woods','Tripp Johns','Ty Stauss','Xavier Flores','Zane Roos')
+
 # Tables
 athleteInfo <- read.csv("AthleteInformation1.csv")
 allData <- read.csv("FINAL TABLE.csv")
@@ -182,7 +200,7 @@ rf.model <- train(Class ~., data = train.tree,
 rf.model
 ```
 
-```{r plot model}
+```{r plot model, fig.height=15, fig.width=18}
 plot(rf.model)
 # min number of trees
 tree_num <- which(rf.model$finalModel$forest$ndbigtree == min(rf.model$finalModel$forest$ndbigtree))
@@ -256,7 +274,7 @@ rf.model.2
 ```
 
 
-```{r plot model 2}
+```{r plot model 2, fig.height=15, fig.width=18}
 plot(rf.model.2)
 # min number of trees
 tree_num <- which(rf.model.2$finalModel$forest$ndbigtree == min(rf.model.2$finalModel$forest$ndbigtree))
@@ -333,7 +351,7 @@ rf.model.3
 rf.model.3$finalModel
 ```
 
-```{r plot model 2}
+```{r plot model 3, fig.height=15, fig.width=18}
 # min number of trees
 tree_num <- which(rf.model.3$finalModel$forest$ndbigtree == min(rf.model.3$finalModel$forest$ndbigtree))
 tree_func(rf.model.3$finalModel, tree_num)

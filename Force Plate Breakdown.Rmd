@@ -17,6 +17,9 @@ output: html_document
 - Avg Relative Propulsive Power
 - Avg Braking Power
 - Avg Relative Braking Power
+<br>
+
+
 
 
 
@@ -28,6 +31,7 @@ output: html_document
 - Avg Braking Velocity
 - Avg Braking Force
 - Avg Relative Braking Force
+<br>
 
 
 
@@ -42,22 +46,31 @@ output: html_document
 *****
 <br>
 
-####All Performance Outcomes are important for every athlete.  We use Performance Drivers to classify athletes and identify what Drivers and strategies produce the most optimal performance outcomes
+#### All Performance Outcomes are important for every athlete.  We use Performance Drivers to classify athletes and identify what Drivers and strategies produce the most optimal performance outcomes
 
-#### Alogrithm 1:
+#### Logic 1:
 Momentum = *Takeoff Velo > Avg Propulsive Velo +2  &  Avg Propulsive Force > Avg Propulsive Velo +2* <br>
 Power = *!Momentum & Avg Braking Force < Avg Braking Velocity - 2* <br>
-Athletic = *!Momentum & Avg Braking Force >= Avg Braking Velocity -2*
+Athletic = *!Momentum & Avg Braking Force >= Avg Braking Velocity -2* <br>
+**After running multiple models with similar logic to this, I realized far too many athletes were classified as Power.  Power athletes should be a rarity that only consist of primarily type 2b muscle fibers.  The decision boundries between athelte types were also too close together.  Several athletes had multiple different labels based on different tests.  Power athletes should never test as momentum athletes and visa versa.**
+
+<br>
+
+#### Logic 2:
+Momentum = *Avg..Relative.Propulsive.Force <= Takeoff.Velocity - 5 & Avg..Propulsive.Velocity < Takeoff.Velocity* <br>
+Power = *Avg..Relative.Propulsive.Force >= Avg..Propulsive.Velocity + 5 & Avg..Relative.Propulsive.Force >= Takeoff.Velocity* <br>
+Athletic = *Athletes that are in between Momentum and Power.  Rather than define them explicity, let the model define them.* <br>
+**This was logic produced tremendously more accurate models.  The primary difference being the realization that athletes can be evaluated on a combination of acceraltion and velocitty.  Takeoff Velocity is a proxy for how well an athlete can gain speed.  Avg Velocity informs how quickly an athlete can move throughout the concentric portion of the jump.  Avg. Relative Force is the rate of change of velocity (acceleration).  So athletes that have extremely high acceleration (higher than both average and take off velocity) have the most explosive capabilities, and visa versa.**
 
 <br>
 ****
 <br>
 
-<b>DESCRIPTIONS<b>
+**DESCRIPTIONS**
 
-<p> Momentum athletes need both size and strength. The only momentum athletes that can be successful on field also have a braking force greater than braking velocity. <p>
+<p> Momentum athletes need both size and strength. They can be highly successful on the field but will always require more time to produce force and adequate levels of mobility. <p>
 
-<p> Power athletes need strength.  They can be successful on their own, but added strength improves deceleration abilities. <p>
+<p> Power athletes need strength.  They can be successful on their own, but added strength improves deceleration abilities.  They can also move in very small ranges of motion so too much mobility/length may inhibit explosive capabilities  <p>
 
-<p> Athletic athletes are case by case.  They rely on doing multiple things well.  Some could need size, some could need more power.  If there is an athletic athlete who is average or below in all categories, it is not condusive to future success <p>
+<p> Athletic athletes are case by case.  They rely on doing multiple things well.  Some could need size, some could need more power.  They need to be highly skilled in their sport If there is an athletic athlete who is average or below in all categories, it is not condusive to future success <p>
 
