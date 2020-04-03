@@ -1,5 +1,7 @@
-setwd("https://github.com/JBuffa10/clustering-physiology.git")
+library(extrafont)
 library(tidyverse)
+library(plotly)
+
 
 # Scoring Function
 custom.scoring <- function(x){
@@ -82,5 +84,240 @@ clusterData %>%
   filter(Avg..Relative.Propulsive.Force >= Avg..Propulsive.Velocity + 5,
          Avg..Relative.Propulsive.Force >= Takeoff.Velocity,
          Avg..Relative.Propulsive.Force > 50) %>% view()
+
+
+############################
+## SAMPLE VELOCITY GRAPHS ##
+############################
+
+# Same Average & Lower Takeoff
+VelocityCurve <- 
+  ggplot(data = data.frame(x = c(0,1)), aes(x = x)) +
+  stat_function(fun = dnorm, args = list(.6,.12), size = 2, aes(color = "Good")) +
+  stat_function(fun = dnorm, args = list(.6,.125), size = 2, aes(color = 'Bad')) +
+  scale_y_continuous(name = "Velocity", breaks = seq(0,4,.5), limits = c(0,4)) +
+  scale_x_continuous(name = "Time", breaks = seq(0,1,.2)) +
+  scale_colour_brewer(palette="Accent") +
+  labs(colour = "Takeoff Velocity") +
+  ggtitle("Same Avg. & Lower Takeoff Velocity") +
+  theme(panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(), panel.background = element_blank(),
+        axis.title.x = element_text(size = 14, face = "bold.italic"),
+        axis.title.y = element_text(size = 14, face = "bold.italic"),
+        axis.line = element_line(size=1, colour = "black"),
+        text=element_text(family="Tahoma"),
+        plot.title = element_text(size = 18, family = "Tahoma", face = "bold", hjust = .5),
+        legend.position = "bottom")
+
+
+# Lower Average & Lower Takeoff
+VelocityCurve.1 <- 
+  ggplot(data = data.frame(x = c(0,1)), aes(x = x)) +
+  stat_function(fun = dnorm, args = list(.6,.12), size = 2, aes(color = "Good")) +
+  stat_function(fun = dnorm, args = list(.6,.16), size = 2, aes(color = 'Bad')) +
+  scale_y_continuous(name = "Velocity", breaks = seq(0,4,.5), limits = c(0,4)) +
+  scale_x_continuous(name = "Time", breaks = seq(0,1,.2)) +
+  scale_colour_brewer(palette="Accent") +
+  labs(colour = "Takeoff Velocity") +
+  ggtitle("Lower Avg. & Takeoff Velocity") +
+  theme(panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(), panel.background = element_blank(),
+        axis.title.x = element_text(size = 14, face = "bold.italic"),
+        axis.title.y = element_text(size = 14, face = "bold.italic"),
+        axis.line = element_line(size=1, colour = "black"),
+        text=element_text(family="Tahoma"),
+        plot.title = element_text(size = 18, family = "Tahoma", face = "bold", hjust = .5),
+        legend.position = "bottom")
+
+# Higher Average & Higher Takeoff
+VelocityCurve.2 <- 
+  ggplot(data = data.frame(x = c(0,1)), aes(x = x)) +
+  stat_function(fun = dnorm, args = list(.6,.13), size = 2, aes(color = "Better")) +
+  stat_function(fun = dnorm, args = list(.6,.1), size = 2, aes(color = 'Good')) +
+  scale_y_continuous(name = "Velocity", breaks = seq(0,4,.5), limits = c(0,4)) +
+  scale_x_continuous(name = "Time", breaks = seq(0,1,.2)) +
+  scale_colour_brewer(palette="Accent") +
+  labs(colour = "Takeoff Velocity") +
+  ggtitle("Velocity and Time Curves") +
+  theme(panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(), panel.background = element_blank(),
+        axis.title.x = element_text(size = 14, face = "bold.italic"),
+        axis.title.y = element_text(size = 14, face = "bold.italic"),
+        axis.line = element_line(size=1, colour = "black"),
+        text=element_text(family="Tahoma"),
+        plot.title = element_text(size = 18, family = "Tahoma", face = "bold", hjust = .5),
+        legend.position = "bottom")
+
+# Lower Average & Same Takeoff
+VelocityCurve.3 <- 
+  ggplot(data = data.frame(x = c(0,1)), aes(x = x)) +
+  stat_function(fun = dnorm, args = list(.6,.12), size = 2, aes(color = "Good")) +
+  stat_function(fun = dnorm, args = list(.6,.13), size = 2, aes(color = 'Bad')) +
+  scale_y_continuous(name = "Velocity", breaks = seq(0,4,.5), limits = c(0,4)) +
+  scale_x_continuous(name = "Time", breaks = seq(0,1,.2)) +
+  scale_colour_brewer(palette="Accent") +
+  labs(colour = "Takeoff Velocity") +
+  ggtitle("Velocity and Time Curves") +
+  theme(panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(), panel.background = element_blank(),
+        axis.title.x = element_text(size = 14, face = "bold.italic"),
+        axis.title.y = element_text(size = 14, face = "bold.italic"),
+        axis.line = element_line(size=1, colour = "black"),
+        text=element_text(family="Tahoma"),
+        plot.title = element_text(size = 18, family = "Tahoma", face = "bold", hjust = .5),
+        legend.position = "bottom")
+
+
+####### SAMPLE CURVES USING dnorm
+
+ggplot(data = data.frame(x=x.norm,y=curve.x.norm)) + 
+  geom_line(aes(x=x, y=y, color = "Normal"), size = 2) +
+  geom_line(data = data.frame(x=x.norm,y=curve.x.slow), aes(x=x, y=y, color = "Slow"), size = 2) +
+  scale_y_continuous(name = "Velocity", breaks = seq(0,4,.5), limits = c(0,4)) +
+  scale_x_continuous(name = "Time", breaks = seq(0,1,.2)) +
+  scale_colour_brewer(palette="Accent") +
+  labs(colour = "Takeoff Velocity") +
+  ggtitle("Velocity and Time Curves") +
+  theme(panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(), panel.background = element_blank(),
+        axis.title.x = element_text(size = 14, face = "bold.italic"),
+        axis.title.y = element_text(size = 14, face = "bold.italic"),
+        axis.line = element_line(size=1, colour = "black"),
+        text=element_text(family="Tahoma"),
+        plot.title = element_text(size = 18, family = "Tahoma", face = "bold", hjust = .5),
+        legend.position = "bottom")
+
+curve.x.slow = dnorm(x.norm,mean, sd.slow)
+df = data.frame(x=x.norm,y=curve.x.slow) %>% mutate(y = ifelse(y >= quantile(y,.9,na.rm = TRUE), y+1,y))
+df.1 = data.frame(x=x.norm,y=curve.x.norm)
+
+ggplot(data = df) + 
+  geom_smooth(aes(x=x, y=y), color = 'purple', se = FALSE, size = 2) + 
+  geom_smooth(data = df.1, aes(x=x, y=y), color = 'green', se = FALSE, size = 2) +
+  scale_y_continuous(name = "Velocity", breaks = seq(0,4,.5), limits = c(0,4)) +
+  scale_x_continuous(name = "Time", breaks = seq(0,1,.2)) +
+  scale_colour_brewer(palette="Accent") +
+  labs(colour = "Takeoff Velocity") +
+  ggtitle("Velocity and Time Curves") +
+  theme(panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(), panel.background = element_blank(),
+        axis.title.x = element_text(size = 14, face = "bold.italic"),
+        axis.title.y = element_text(size = 14, face = "bold.italic"),
+        axis.line = element_line(size=1, colour = "black"),
+        text=element_text(family="Tahoma"),
+        plot.title = element_text(size = 18, family = "Tahoma", face = "bold", hjust = .5),
+        legend.position = "bottom")
+
+########################################
+## DATA FRAME OF DIFFERENT JUMP TYPES ##
+########################################
+mean = .6
+sd.fast = .08
+sd.slow = .16
+sd.normal = .12
+x = seq(0,1,length=100)
+velo.norm = dnorm(x,mean, sd.normal)
+velo.slow = dnorm(x, mean, sd.slow)
+velo.fast = dnorm(x, mean, sd.fast)
+df = data.frame(x = x, y.norm = velo.norm, y.slow = velo.slow, y.fast = velo.fast)
+
+df.edited = df %>% mutate(y.slow = ifelse(y.slow >= quantile(y.slow,.78,na.rm = TRUE), y.norm,y.slow),
+                          y.fast = ifelse(y.fast >= quantile(y.fast,.8,na.rm = TRUE), y.norm,y.fast))
+
+
+df.edited %>%
+  ggplot() + 
+  geom_line(aes(x=x,y=y.slow, color = 'Slow'), size = 2) +
+  geom_line(aes(x=x,y=y.norm, color='Normal'), size = 2) +
+  #geom_smooth(aes(x=x, y=y.norm, color = 'Normal'), method = 'loess', se = FALSE, size = 1.5, alpha = .3) + 
+  #geom_smooth(aes(x=x, y=y.slow, color = 'Slow'), method = 'loess', se = FALSE, size = 1.5, alpha = .3) +
+  #geom_smooth(aes(x=x, y=y.fast, color = 'Fast'), method = 'loess', se = FALSE, size = 1.5, alpha = .3) +
+  scale_y_continuous(name = "Velocity", breaks = seq(0,4,.5), limits = c(0,4)) +
+  scale_x_continuous(name = "Time", breaks = seq(0,1,.2)) +
+  scale_colour_brewer(palette="Accent") +
+  labs(colour = "Avg. Velocities") +
+  ggtitle("Assessing Different Average Velocities") +
+  theme(panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(), panel.background = element_blank(),
+        axis.title.x = element_text(size = 14, face = "bold.italic"),
+        axis.title.y = element_text(size = 14, face = "bold.italic"),
+        axis.line = element_line(size=1, colour = "black"),
+        text=element_text(family="Tahoma"),
+        plot.title = element_text(size = 18, family = "Tahoma", face = "bold", hjust = .5),
+        legend.position = "bottom")
+
+
+######################
+## CUSTOM FUNCTIONS ##
+######################
+set.seed(123)
+x = seq(0,1,.01) # plotting x and x would make velocity and acceleration the same
+y = dnorm(x,.4,.1) # plotting x and y would make higher acceleration curve
+y_2 = qnorm(x) # average this with Y to get bad acceleration
+data = data.frame(x=x, y=(y+y_2),y_2=(y+y_2)/1.5)
+
+# TWITCH
+data[1:45,] %>%
+  ggplot() +
+  geom_line(aes(x=x,y=y), color = 'black', size = 2) +
+  geom_line(aes(x=x,y=(x*12)-1), color = 'dark red', size = 1.5, linetype = 'dashed', alpha = .4) +
+  scale_x_continuous(name = "Time", limits = c(-.1,.6)) +
+  scale_y_continuous(name = "Velocity", limits = c(-1,4)) +
+  ggtitle("Acceleration > Velocity") +
+  theme(panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(), panel.background = element_blank(),
+        axis.title.x = element_text(size = 14, face = "bold.italic"),
+        axis.text = element_blank(),
+        axis.title.y = element_text(size = 14, face = "bold.italic"),
+        axis.line = element_line(size=1, colour = "black"),
+        text=element_text(family="Tahoma"),
+        plot.title = element_text(size = 18, face = "bold", hjust = .5),
+        legend.position = "bottom")
+
+# MOMENTUM
+data[1:45,] %>%
+  ggplot() +
+  geom_line(aes(x=x,y=y_2), color = 'black', size = 2) +
+  geom_line(aes(x=x,y=(x*9)-1.4), color = 'dark red', size = 1.5, linetype = 'dashed', alpha = .4) +
+  scale_x_continuous(name = "Time", limits = c(-.1,.6)) +
+  scale_y_continuous(name = "Velocity", limits = c(-1.4,3)) +
+  ggtitle("Acceleration < Velocity") +
+  theme(panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(), panel.background = element_blank(),
+        axis.title.x = element_text(size = 14, face = "bold.italic"),
+        axis.text = element_blank(),
+        axis.title.y = element_text(size = 14, face = "bold.italic"),
+        axis.line = element_line(size=1, colour = "black"),
+        text=element_text(family="Tahoma"),
+        plot.title = element_text(size = 18, face = "bold", hjust = .5),
+        legend.position = "bottom")
+
+# SAME ACCEL & VELOCITY
+data %>%
+  ggplot() +
+  geom_line(aes(x=x,y=(x*9)-1.4), color = 'dark red', size = 2) +
+  scale_x_continuous(name = "Time", breaks = seq(0,1,.1), limits = c(-.1,.6)) +
+  scale_y_continuous(name = "Velocity", limits = c(-1.4,3)) +
+  ggtitle("Acceleration = Velocity") +
+  theme(panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(), panel.background = element_blank(),
+        axis.title.x = element_text(size = 14, face = "bold.italic"),
+        axis.text = element_blank(),
+        axis.title.y = element_text(size = 14, face = "bold.italic"),
+        axis.line = element_line(size=1, colour = "black"),
+        text=element_text(family="Tahoma"),
+        plot.title = element_text(size = 18, family = "Tahoma", face = "bold", hjust = .5),
+        legend.position = "bottom")
+
 
 

@@ -60,7 +60,9 @@ Athletic = *!Momentum & Avg Braking Force >= Avg Braking Velocity -2* <br>
 Momentum = *Avg..Relative.Propulsive.Force <= Takeoff.Velocity - 5 & Avg..Propulsive.Velocity < Takeoff.Velocity* <br>
 Power = *Avg..Relative.Propulsive.Force >= Avg..Propulsive.Velocity + 5 & Avg..Relative.Propulsive.Force >= Takeoff.Velocity* <br>
 Athletic = *Athletes that are in between Momentum and Power.  Rather than define them explicity, let the model define them.* <br>
-**This was logic produced tremendously more accurate models.  The primary difference being the realization that athletes can be evaluated on a combination of acceraltion and velocitty.  Takeoff Velocity is a proxy for how well an athlete can gain speed.  Avg Velocity informs how quickly an athlete can move throughout the concentric portion of the jump.  Avg. Relative Force is the rate of change of velocity (acceleration).  So athletes that have extremely high acceleration (higher than both average and take off velocity) have the most explosive capabilities, and visa versa.**
+**This was logic produced tremendously more accurate models.  The primary difference being the realization that athletes can be evaluated on a combination of acceraltion and velocitty.  Takeoff Velocity is a proxy for how well an athlete can gain speed.  Avg Velocity informs how quickly an athlete can move throughout the concentric portion of the jump.  Avg. Relative Force is the rate of change of velocity (acceleration).  So athletes that have extremely high acceleration (higher than both average and take off velocity) have the most explosive capabilities, and visa versa.** <br>
+
+- 
 
 <br>
 ****
